@@ -6,6 +6,7 @@ import { sideViewState, useAuth, useConfig } from '@chainlit/react-client';
 import ChatSettingsSidebar from '@/components/ChatSettings/ChatSettingsSidebar';
 import ElementSideView from '@/components/ElementSideView';
 import LeftSidebar from '@/components/LeftSidebar';
+import TaskPanel from '@/components/TaskPanel';
 import { TaskList } from '@/components/Tasklist';
 import { Header } from '@/components/header';
 import { ResizablePanel, ResizablePanelGroup } from '@/components/ui/resizable';
@@ -43,8 +44,11 @@ const Page = ({ children }: Props) => {
           minSize={40}
           defaultSize={60}
         >
-          <div className="flex flex-row flex-grow overflow-auto">
-            {children}
+          <div className="flex flex-col flex-grow overflow-hidden">
+            <div className="flex flex-row flex-grow overflow-auto">
+              {children}
+            </div>
+            <TaskPanel />
           </div>
         </ResizablePanel>
         {sideView ? <ElementSideView /> : <TaskList isMobile={false} />}
