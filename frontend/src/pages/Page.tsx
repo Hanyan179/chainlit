@@ -48,7 +48,6 @@ const Page = ({ children }: Props) => {
             <div className="flex flex-row flex-grow overflow-auto">
               {children}
             </div>
-            <TaskPanel />
           </div>
         </ResizablePanel>
         {sideView ? <ElementSideView /> : <TaskList isMobile={false} />}
@@ -74,6 +73,7 @@ const Page = ({ children }: Props) => {
       ) : (
         <div className="h-screen w-screen flex">{mainContent}</div>
       )}
+      <TaskPanel />
     </SidebarProvider>
   );
 };
