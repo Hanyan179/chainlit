@@ -19,7 +19,7 @@ type Props = {
 
 const Page = ({ children }: Props) => {
   const { config } = useConfig();
-  const { data } = useAuth();
+  const { data: _authData } = useAuth();
   const userEnv = useRecoilValue(userEnvState);
   const sideView = useRecoilValue(sideViewState);
 
@@ -53,7 +53,7 @@ const Page = ({ children }: Props) => {
     </div>
   );
 
-  const historyEnabled = config?.dataPersistence && data?.requireLogin;
+  const historyEnabled = true; // OfferBot: 始终显示侧边栏
   const sidebarHidden = config?.ui?.default_sidebar_state === 'hidden';
 
   return (

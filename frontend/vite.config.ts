@@ -6,6 +6,27 @@ import tsconfigPaths from 'vite-tsconfig-paths';
 
 // https://vitejs.dev/config/
 export default defineConfig({
+  server: {
+    port: 5173,
+    proxy: {
+      '/ws/socket.io': {
+        target: 'http://localhost:7893',
+        ws: true
+      },
+      '/project': {
+        target: 'http://localhost:7893'
+      },
+      '/auth': {
+        target: 'http://localhost:7893'
+      },
+      '/avatars': {
+        target: 'http://localhost:7893'
+      },
+      '/public': {
+        target: 'http://localhost:7893'
+      }
+    }
+  },
   build: {
     sourcemap: true
   },

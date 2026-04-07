@@ -353,6 +353,12 @@ const useChatSession = () => {
         setAskUser(undefined);
       });
 
+      socket.on('clear_messages', () => {
+        setMessages([]);
+        setElements([]);
+        setTasklists([]);
+      });
+
       socket.on('call_fn', ({ name, args }, callback) => {
         setCallFn({ name, args, callback });
       });

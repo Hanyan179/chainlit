@@ -1,14 +1,12 @@
 import { memo } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { useSetRecoilState } from 'recoil';
 
-import { useAudio, useAuth, useChatData, useConfig } from '@chainlit/react-client';
+import { useAudio, useChatData, useConfig } from '@chainlit/react-client';
 
 import AudioPresence from '@/components/AudioPresence';
-import ButtonLink from '@/components/ButtonLink';
 import { Settings } from '@/components/icons/Settings';
 import { Button } from '@/components/ui/button';
-import { useSidebar } from '@/components/ui/sidebar';
 import {
   Tooltip,
   TooltipContent,
@@ -18,83 +16,89 @@ import { Translator } from 'components/i18n';
 
 import { chatSettingsSidebarOpenState } from '@/state/project';
 
-import ApiKeys from './ApiKeys';
 import ChatProfiles from './ChatProfiles';
-import NewChatButton from './NewChat';
-import ReadmeButton from './Readme';
-import ShareButton from './Share';
-import SidebarTrigger from './SidebarTrigger';
 import { ThemeToggle } from './ThemeToggle';
-import UserNav from './UserNav';
+
+// OfferBot 导航项
+const NAV_ITEMS = [
+  { key: 'chat', label: '💬 对话', path: '/' },
+  { key: 'jobs', label: '📋 岗位', path: '/app/jobs' },
+  { key: 'graph', label: '🕸️ 图谱', path: '/app/graph' },
+  { key: 'interviews', label: '🎯 面试', path: '/app/interviews' },
+  { key: 'overview', label: '🏆 总览', path: '/app/overview' },
+  { key: 'memory', label: '🧠 画像', path: '/app/memory' },
+  { key: 'settings', label: '⚙️ 设置', path: '/app/settings' },
+];
 
 const Header = memo(() => {
   const { audioConnection } = useAudio();
   const navigate = useNavigate();
-  const { data } = useAuth();
+  const location = useLocation();
   const { config } = useConfig();
   const { chatSettingsInputs } = useChatData();
-  const { open, openMobile, isMobile } = useSidebar();
   const setChatSettingsSidebarOpen = useSetRecoilState(
     chatSettingsSidebarOpenState
   );
-
-  const sidebarOpen = isMobile ? openMobile : open;
-
-  const historyEnabled = data?.requireLogin && config?.dataPersistence;
-  const sidebarHidden = config?.ui?.default_sidebar_state === 'hidden';
-
-  const links = config?.ui?.header_links || [];
 
   const showSettingsInHeader =
     config?.ui?.chat_settings_location === 'sidebar' &&
     chatSettingsInputs.length > 0;
 
+  // 判断当前激活的导航项
+  const currentPath = location.pathname;
+  const getActiveKey = () => {
+    if (currentPath === '/' || currentPath.startsWith('/thread')) return 'chat';
+    const match = NAV_ITEMS.find(item => item.path !== '/' && currentPath.startsWith(item.path));
+    return match?.key || 'chat';
+  };
+  const activeKey = getActiveKey();
+
   return (
     <div
-      className="p-3 flex h-[60px] items-center justify-between gap-2 relative"
+      className="px-4 flex h-[48px] items-center gap-2 border-b border-border"
       id="header"
     >
-      <div className="flex items-center">
-        {historyEnabled && !sidebarHidden ? !sidebarOpen ? <SidebarTrigger /> : null : null}
-        {historyEnabled && !sidebarHidden ? (
-          !sidebarOpen ? (
-            <NewChatButton navigate={navigate} />
-          ) : null
-        ) : (
-          <NewChatButton navigate={navigate} />
-        )}
+      {/* 品牌 */}
+      <span
+        className="text-[15px] font-bold cursor-pointer mr-2 whitespace-nowrap"
+        onClick={() => navigate('/')}
+      >
+        🤖 OfferBot
+      </span>
 
-        <ChatProfiles navigate={navigate} />
-      </div>
+      {/* 导航链接 */}
+      <nav className="flex items-center gap-1">
+        {NAV_ITEMS.map((item) => (
+          <button
+            key={item.key}
+            onClick={() => navigate(item.path)}
+            className={`text-[13px] font-medium px-3 py-1.5 rounded-lg transition-all whitespace-nowrap ${
+              activeKey === item.key
+                ? 'bg-primary text-primary-foreground'
+                : 'text-muted-foreground hover:bg-accent hover:text-foreground'
+            }`}
+          >
+            {item.label}
+          </button>
+        ))}
+      </nav>
 
-      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2">
-        {audioConnection === 'on' ? (
-          <AudioPresence
-            type="server"
-            height={35}
-            width={70}
-            barCount={4}
-            barSpacing={2}
-          />
-        ) : null}
-      </div>
+      {/* 对话页面的控件 */}
+      {activeKey === 'chat' && (
+        <div className="flex items-center gap-1 ml-2">
+          <ChatProfiles navigate={navigate} />
+        </div>
+      )}
 
-      <div />
-      <div className="flex items-center gap-1">
-        <ShareButton />
-        <ReadmeButton />
-        <ApiKeys />
-        {links &&
-          links.map((link, index) => (
-            <ButtonLink
-              key={`${link.name}-${link.url}-${index}`}
-              name={link.name}
-              displayName={link.display_name}
-              iconUrl={link.icon_url}
-              url={link.url}
-              target={link.target}
-            />
-          ))}
+      {/* 音频 */}
+      {audioConnection === 'on' && (
+        <div className="flex-1 flex justify-center">
+          <AudioPresence type="server" height={35} width={70} barCount={4} barSpacing={2} />
+        </div>
+      )}
+
+      {/* 右侧工具 */}
+      <div className="flex items-center gap-1 ml-auto">
         {showSettingsInHeader && (
           <Tooltip>
             <TooltipTrigger asChild>
@@ -114,7 +118,6 @@ const Header = memo(() => {
           </Tooltip>
         )}
         <ThemeToggle />
-        <UserNav />
       </div>
     </div>
   );
