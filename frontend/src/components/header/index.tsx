@@ -57,26 +57,9 @@ const Header = memo(() => {
         🤖 OfferBot
       </span>
 
-      {/* 导航链接 */}
-      <nav className="flex items-center gap-1">
-        {NAV_ITEMS.map((item) => (
-          <button
-            key={item.key}
-            onClick={() => navigate(item.path)}
-            className={`text-[13px] font-medium px-3 py-1.5 rounded-lg transition-all whitespace-nowrap ${
-              activeKey === item.key
-                ? 'bg-primary text-primary-foreground'
-                : 'text-muted-foreground hover:bg-accent hover:text-foreground'
-            }`}
-          >
-            {item.label}
-          </button>
-        ))}
-      </nav>
-
       {/* 对话页面的控件 */}
       {activeKey === 'chat' && (
-        <div className="flex items-center gap-1 ml-2">
+        <div className="flex items-center gap-1">
           <ChatProfiles navigate={navigate} />
         </div>
       )}
@@ -88,8 +71,23 @@ const Header = memo(() => {
         </div>
       )}
 
-      {/* 右侧工具 */}
+      {/* 右侧：导航 + 工具 */}
       <div className="flex items-center gap-1 ml-auto">
+        <nav className="flex items-center gap-1 mr-2">
+          {NAV_ITEMS.filter(item => item.key !== 'chat').map((item) => (
+            <button
+              key={item.key}
+              onClick={() => navigate(item.path)}
+              className={`text-[12px] font-medium px-2.5 py-1 rounded-md transition-all whitespace-nowrap ${
+                activeKey === item.key
+                  ? 'bg-primary text-primary-foreground'
+                  : 'text-muted-foreground hover:bg-accent hover:text-foreground'
+              }`}
+            >
+              {item.label}
+            </button>
+          ))}
+        </nav>
         {showSettingsInHeader && (
           <Tooltip>
             <TooltipTrigger asChild>
