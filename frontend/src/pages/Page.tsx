@@ -53,7 +53,7 @@ const Page = ({ children }: Props) => {
     </div>
   );
 
-  const historyEnabled = true; // OfferBot: 始终显示侧边栏
+  const historyEnabled = true; // MooBot: 始终显示侧边栏
   const sidebarHidden = config?.ui?.default_sidebar_state === 'hidden';
 
   return (

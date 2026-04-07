@@ -3,11 +3,11 @@ import { Navigate, createBrowserRouter } from 'react-router-dom';
 
 import AuthCallback from 'pages/AuthCallback';
 import Element from 'pages/Element';
+import EmbedPage from 'pages/EmbedPage';
 import Env from 'pages/Env';
 import Home from 'pages/Home';
 import Login from 'pages/Login';
 import Thread from 'pages/Thread';
-import EmbedPage from 'pages/EmbedPage';
 
 export const router = createBrowserRouter(
   [
@@ -39,7 +39,7 @@ export const router = createBrowserRouter(
       path: '/share/:id',
       element: <Thread />
     },
-    // OfferBot 自定义页面 — 嵌入 FastAPI 页面
+    // MooBot 自定义页面 — 嵌入 FastAPI 页面
     {
       path: '/app/jobs',
       element: <EmbedPage src="/page/jobs" title="岗位管理" />

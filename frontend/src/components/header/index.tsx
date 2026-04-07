@@ -1,3 +1,4 @@
+import { NAV_ITEMS } from '@/constants/nav';
 import { memo } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useSetRecoilState } from 'recoil';
@@ -19,8 +20,6 @@ import { chatSettingsSidebarOpenState } from '@/state/project';
 import ChatProfiles from './ChatProfiles';
 import { ThemeToggle } from './ThemeToggle';
 
-import { NAV_ITEMS } from '@/constants/nav';
-
 const Header = memo(() => {
   const { audioConnection } = useAudio();
   const navigate = useNavigate();
@@ -39,7 +38,9 @@ const Header = memo(() => {
   const currentPath = location.pathname;
   const getActiveKey = () => {
     if (currentPath === '/' || currentPath.startsWith('/thread')) return 'chat';
-    const match = NAV_ITEMS.find(item => item.path !== '/' && currentPath.startsWith(item.path));
+    const match = NAV_ITEMS.find(
+      (item) => item.path !== '/' && currentPath.startsWith(item.path)
+    );
     return match?.key || 'chat';
   };
   const activeKey = getActiveKey();
@@ -54,7 +55,7 @@ const Header = memo(() => {
         className="text-[15px] font-bold cursor-pointer mr-2 whitespace-nowrap"
         onClick={() => navigate('/')}
       >
-        🤖 OfferBot
+        🐄 MooBot
       </span>
 
       {/* 对话页面的控件 */}
@@ -67,14 +68,20 @@ const Header = memo(() => {
       {/* 音频 */}
       {audioConnection === 'on' && (
         <div className="flex-1 flex justify-center">
-          <AudioPresence type="server" height={35} width={70} barCount={4} barSpacing={2} />
+          <AudioPresence
+            type="server"
+            height={35}
+            width={70}
+            barCount={4}
+            barSpacing={2}
+          />
         </div>
       )}
 
       {/* 右侧：导航 + 工具 */}
       <div className="flex items-center gap-1 ml-auto">
         <nav className="flex items-center gap-1 mr-2">
-          {NAV_ITEMS.filter(item => item.key !== 'chat').map((item) => (
+          {NAV_ITEMS.filter((item) => item.key !== 'chat').map((item) => (
             <button
               key={item.key}
               onClick={() => navigate(item.path)}
