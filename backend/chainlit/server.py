@@ -958,6 +958,8 @@ async def get_user_threads(
             jsonl_files = sorted(conversations_dir.glob("*.jsonl"), reverse=True)
             threads = []
             for f in jsonl_files[:payload.pagination.first]:
+                if f.stat().st_size == 0:
+                    continue  # 跳过空对话文件
                 conv_id = f.stem
                 name = "新对话"
                 try:
