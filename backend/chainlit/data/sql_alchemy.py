@@ -674,7 +674,7 @@ class SQLAlchemyDataLayer(BaseDataLayer):
                 t."userIdentifier",
                 t."tags",
                 t."metadata"
-            ORDER BY updatedAt DESC NULLS LAST
+            ORDER BY CASE WHEN updatedAt IS NULL THEN 1 ELSE 0 END, updatedAt DESC
             LIMIT :limit
         """
         user_threads = await self.execute_sql(
