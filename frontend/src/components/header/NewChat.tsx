@@ -93,6 +93,7 @@ const NewChatButton = ({ navigate, onConfirm, ...buttonProps }: Props) => {
     if (onConfirm) {
       onConfirm();
     } else {
+      sessionStorage.setItem('newChat', '1');
       clear();
       navigate?.('/');
     }

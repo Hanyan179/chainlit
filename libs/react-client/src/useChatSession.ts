@@ -119,6 +119,11 @@ const useChatSession = () => {
         console.error(`Failed to set sticky session cookie: ${err}`);
       }
 
+      const isNewChat = !!sessionStorage.getItem('newChat');
+      if (isNewChat) {
+        sessionStorage.removeItem('newChat');
+      }
+
       const socket = io(uri, {
         path,
         withCredentials: true,
@@ -126,7 +131,7 @@ const useChatSession = () => {
         auth: {
           clientType: client.type,
           sessionId,
-          threadId: idToResume || '',
+          threadId: isNewChat ? '' : idToResume || '',
           userEnv: JSON.stringify(userEnv),
           chatProfile: chatProfile ? encodeURIComponent(chatProfile) : ''
         }
@@ -259,13 +264,17 @@ const useChatSession = () => {
       });
 
       socket.on('resume_thread', (thread: IThread) => {
+        // Ignore resume_thread if we didn't request a thread resume
+        if (!idToResume) {
+          return;
+        }
         const isReadOnlyView = Boolean(
           (thread as any)?.metadata?.viewer_read_only
         );
-        if (!isReadOnlyView && idToResume && thread.id !== idToResume) {
+        if (!isReadOnlyView && thread.id !== idToResume) {
           window.location.href = `/thread/${thread.id}`;
         }
-        if (!isReadOnlyView && idToResume) {
+        if (!isReadOnlyView) {
           setCurrentThreadId(thread.id);
         }
         let messages: IStep[] = [];
