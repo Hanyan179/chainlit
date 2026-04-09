@@ -45,18 +45,6 @@ export const router = createBrowserRouter(
       element: <EmbedPage src="/page/jobs" title="岗位管理" />
     },
     {
-      path: '/app/graph',
-      element: <EmbedPage src="/graph" title="图谱" />
-    },
-    {
-      path: '/app/interviews',
-      element: <EmbedPage src="/page/interviews" title="面试跟踪" />
-    },
-    {
-      path: '/app/overview',
-      element: <EmbedPage src="/page/overview" title="总览" />
-    },
-    {
       path: '/app/memory',
       element: <EmbedPage src="/page/memory" title="记忆画像" />
     },
