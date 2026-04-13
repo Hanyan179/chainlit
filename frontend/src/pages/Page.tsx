@@ -6,7 +6,6 @@ import { sideViewState, useAuth, useConfig } from '@chainlit/react-client';
 import ChatSettingsSidebar from '@/components/ChatSettings/ChatSettingsSidebar';
 import ElementSideView from '@/components/ElementSideView';
 import LeftSidebar from '@/components/LeftSidebar';
-import TaskPanel from '@/components/TaskPanel';
 import { TaskList } from '@/components/Tasklist';
 import { Header } from '@/components/header';
 import { ResizablePanel, ResizablePanelGroup } from '@/components/ui/resizable';
@@ -73,7 +72,6 @@ const Page = ({ children }: Props) => {
       ) : (
         <div className="h-screen w-screen flex">{mainContent}</div>
       )}
-      <TaskPanel />
     </SidebarProvider>
   );
 };

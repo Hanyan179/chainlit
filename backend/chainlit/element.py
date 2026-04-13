@@ -451,4 +451,5 @@ class CustomElement(Element):
         self.updatable = True
 
     async def update(self):
+        self.content = json.dumps(self.props)
         await super().send(self.for_id)

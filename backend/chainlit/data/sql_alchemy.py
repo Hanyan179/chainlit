@@ -103,7 +103,7 @@ class SQLAlchemyDataLayer(BaseDataLayer):
                 return None
 
     async def get_current_timestamp(self) -> str:
-        return datetime.now().isoformat() + "Z"
+        return datetime.utcnow().isoformat() + "Z"
 
     def clean_result(self, obj):
         """Recursively change UUID -> str and serialize dictionaries"""
@@ -564,57 +564,65 @@ class SQLAlchemyDataLayer(BaseDataLayer):
         if self.show_logger:
             logger.info(f"SQLAlchemy: create_element, element_id = {element.id}")
 
-        if not self.storage_provider:
-            logger.warning(
-                "SQLAlchemy: create_element error. No blob_storage_client is configured!"
-            )
-            return
         if not element.for_id:
             return
 
-        content: Optional[Union[bytes, str]] = None
-
-        if element.path:
-            async with aiofiles.open(element.path, "rb") as f:
-                content = await f.read()
-        elif element.url:
-            async with aiohttp.ClientSession() as session:
-                async with session.get(element.url) as response:
-                    if response.status == 200:
-                        content = await response.read()
-                    else:
-                        content = None
-        elif element.content:
-            content = element.content
-        else:
-            raise ValueError("Element url, path or content must be provided")
-        if content is None:
-            raise ValueError("Content is None, cannot upload file")
-
-        user_id: str = await self._get_user_id_by_thread(element.thread_id) or "unknown"
-        file_object_key = f"{user_id}/{element.id}" + (
-            f"/{element.name}" if element.name else ""
-        )
-
-        if not element.mime:
-            element.mime = "application/octet-stream"
-
-        uploaded_file = await self.storage_provider.upload_file(
-            object_key=file_object_key, data=content, mime=element.mime, overwrite=True
-        )
-        if not uploaded_file:
-            raise ValueError(
-                "SQLAlchemy Error: create_element, Failed to persist data in storage_provider"
-            )
-
         element_dict: ElementDict = element.to_dict()
 
-        element_dict["url"] = uploaded_file.get("url")
-        element_dict["objectKey"] = uploaded_file.get("object_key")
+        # CustomElement: props stored as JSON in DB, no blob storage needed
+        if getattr(element, "type", None) == "custom":
+            element_dict_cleaned = {k: v for k, v in element_dict.items() if v is not None}
+            if "props" in element_dict_cleaned:
+                element_dict_cleaned["props"] = json.dumps(element_dict_cleaned["props"])
+        else:
+            # Non-custom elements require storage_provider for file upload
+            if not self.storage_provider:
+                logger.warning(
+                    "SQLAlchemy: create_element error. No blob_storage_client is configured!"
+                )
+                return
 
-        element_dict_cleaned = {k: v for k, v in element_dict.items() if v is not None}
-        if "props" in element_dict_cleaned:
-            element_dict_cleaned["props"] = json.dumps(element_dict_cleaned["props"])
+            content: Optional[Union[bytes, str]] = None
+
+            if element.path:
+                async with aiofiles.open(element.path, "rb") as f:
+                    content = await f.read()
+            elif element.url:
+                async with aiohttp.ClientSession() as session:
+                    async with session.get(element.url) as response:
+                        if response.status == 200:
+                            content = await response.read()
+                        else:
+                            content = None
+            elif element.content:
+                content = element.content
+            else:
+                raise ValueError("Element url, path or content must be provided")
+            if content is None:
+                raise ValueError("Content is None, cannot upload file")
+
+            user_id: str = await self._get_user_id_by_thread(element.thread_id) or "unknown"
+            file_object_key = f"{user_id}/{element.id}" + (
+                f"/{element.name}" if element.name else ""
+            )
+
+            if not element.mime:
+                element.mime = "application/octet-stream"
+
+            uploaded_file = await self.storage_provider.upload_file(
+                object_key=file_object_key, data=content, mime=element.mime, overwrite=True
+            )
+            if not uploaded_file:
+                raise ValueError(
+                    "SQLAlchemy Error: create_element, Failed to persist data in storage_provider"
+                )
+
+            element_dict["url"] = uploaded_file.get("url")
+            element_dict["objectKey"] = uploaded_file.get("object_key")
+
+            element_dict_cleaned = {k: v for k, v in element_dict.items() if v is not None}
+            if "props" in element_dict_cleaned:
+                element_dict_cleaned["props"] = json.dumps(element_dict_cleaned["props"])
 
         columns = ", ".join(f'"{column}"' for column in element_dict_cleaned.keys())
         placeholders = ", ".join(f":{column}" for column in element_dict_cleaned.keys())

@@ -862,7 +862,7 @@ async def project_settings(
             "features": cfg.features.model_dump(),
             "userEnv": cfg.project.user_env,
             "maskUserEnv": cfg.project.mask_user_env,
-            "dataPersistence": True,  # OfferBot: 始终启用，用本地 ChatHistoryStore
+            "dataPersistence": bool(get_data_layer()),
             "threadResumable": bool(config.code.on_chat_resume),
             # Expose whether shared threads feature is enabled (flag + app callback)
             "threadSharing": bool(
@@ -942,59 +942,7 @@ async def get_user_threads(
     data_layer = get_data_layer()
 
     if not data_layer:
-        # OfferBot: 没有 data layer 时，直接读取本地 JSONL 对话文件
-        import json as _json
-        from pathlib import Path as _Path
-
-        try:
-            conversations_dir = _Path(config.root) / "data" / "conversations"
-
-            if not conversations_dir.exists():
-                return JSONResponse(content={
-                    "pageInfo": {"hasNextPage": False, "startCursor": None, "endCursor": None},
-                    "data": []
-                })
-
-            jsonl_files = sorted(conversations_dir.glob("*.jsonl"), reverse=True)
-            threads = []
-            for f in jsonl_files[:payload.pagination.first]:
-                if f.stat().st_size == 0:
-                    continue  # 跳过空对话文件
-                conv_id = f.stem
-                name = "新对话"
-                try:
-                    with f.open("r", encoding="utf-8") as fh:
-                        for line in fh:
-                            line = line.strip()
-                            if line:
-                                msg = _json.loads(line)
-                                if msg.get("role") == "user" and msg.get("content"):
-                                    name = msg["content"][:50]
-                                    break
-                except Exception:
-                    pass
-                created_at = conv_id.replace("T", " ").replace("-", ":", 2).replace(":", "-", 2)
-                threads.append({
-                    "id": conv_id,
-                    "createdAt": created_at,
-                    "name": name,
-                    "userId": None,
-                    "userIdentifier": None,
-                    "tags": None,
-                    "metadata": None,
-                    "steps": [],
-                    "elements": None,
-                })
-            return JSONResponse(content={
-                "pageInfo": {"hasNextPage": False, "startCursor": None, "endCursor": None},
-                "data": threads
-            })
-        except Exception as e:
-            logger.warning("OfferBot local thread list failed: %s", e)
-            return JSONResponse(content={
-                "pageInfo": {"hasNextPage": False, "startCursor": None, "endCursor": None},
-                "data": []
-            })
+        raise HTTPException(status_code=500, detail="Data persistence is not enabled")
 
     if not current_user:
         raise HTTPException(status_code=401, detail="Unauthorized")
@@ -1021,68 +969,7 @@ async def get_thread(
     data_layer = get_data_layer()
 
     if not data_layer:
-        # OfferBot: 从本地 JSONL 文件加载对话详情
-        import json as _json
-        from pathlib import Path as _Path
-
-        conversations_dir = _Path(config.root) / "data" / "conversations"
-        filepath = conversations_dir / f"{thread_id}.jsonl"
-        if not filepath.exists():
-            return JSONResponse(content=None)
-
-        steps = []
-        try:
-            with filepath.open("r", encoding="utf-8") as fh:
-                for line in fh:
-                    line = line.strip()
-                    if not line:
-                        continue
-                    msg = _json.loads(line)
-                    ts = msg.get("timestamp", "")
-                    steps.append({
-                        "id": ts,
-                        "name": "",
-                        "type": "user_message" if msg.get("role") == "user" else "assistant_message",
-                        "threadId": thread_id,
-                        "parentId": None,
-                        "disableFeedback": True,
-                        "streaming": False,
-                        "waitForAnswer": False,
-                        "isError": False,
-                        "metadata": {},
-                        "tags": None,
-                        "input": "",
-                        "output": msg.get("content", ""),
-                        "createdAt": ts,
-                        "start": ts,
-                        "end": ts,
-                        "generation": None,
-                        "showInput": False,
-                        "language": None,
-                        "indent": 0,
-                    })
-        except Exception:
-            pass
-
-        name = "新对话"
-        if steps:
-            for s in steps:
-                if s["type"] == "user_message" and s["output"]:
-                    name = s["output"][:50]
-                    break
-
-        created_at = thread_id.replace("T", " ").replace("-", ":", 2).replace(":", "-", 2)
-        return JSONResponse(content={
-            "id": thread_id,
-            "createdAt": created_at,
-            "name": name,
-            "userId": None,
-            "userIdentifier": None,
-            "tags": None,
-            "metadata": None,
-            "steps": steps,
-            "elements": [],
-        })
+        raise HTTPException(status_code=500, detail="Data persistence is not enabled")
 
     if not current_user:
         raise HTTPException(status_code=401, detail="Unauthorized")
@@ -1343,13 +1230,7 @@ async def delete_thread(
     data_layer = get_data_layer()
 
     if not data_layer:
-        # OfferBot: 从本地删除 JSONL 文件
-        from pathlib import Path as _Path
-        thread_id = payload.threadId
-        filepath = _Path(config.root) / "data" / "conversations" / f"{thread_id}.jsonl"
-        if filepath.exists():
-            filepath.unlink()
-        return JSONResponse(content={"success": True})
+        raise HTTPException(status_code=500, detail="Data persistence is not enabled")
 
     if not current_user:
         raise HTTPException(status_code=401, detail="Unauthorized")

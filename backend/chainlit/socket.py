@@ -80,72 +80,17 @@ async def persist_user_session(thread_id: str, metadata: Dict):
 async def resume_thread(session: WebsocketSession):
     data_layer = get_data_layer()
 
-    # OfferBot: 没有 data layer 时，从本地 JSONL 文件恢复对话
-    if not data_layer:
-        if not session.thread_id_to_resume:
-            return None
-        import json as _json
-        from pathlib import Path as _Path
-        conversations_dir = _Path(config.root) / "data" / "conversations"
-        filepath = conversations_dir / f"{session.thread_id_to_resume}.jsonl"
-        if not filepath.exists():
-            return None
-        steps = []
-        try:
-            with filepath.open("r", encoding="utf-8") as fh:
-                for line in fh:
-                    line = line.strip()
-                    if not line:
-                        continue
-                    msg = _json.loads(line)
-                    ts = msg.get("timestamp", "")
-                    steps.append({
-                        "id": ts,
-                        "name": "",
-                        "type": "user_message" if msg.get("role") == "user" else "assistant_message",
-                        "threadId": session.thread_id_to_resume,
-                        "parentId": None,
-                        "disableFeedback": True,
-                        "streaming": False,
-                        "waitForAnswer": False,
-                        "isError": False,
-                        "metadata": {},
-                        "tags": None,
-                        "input": "",
-                        "output": msg.get("content", ""),
-                        "createdAt": ts,
-                        "start": ts,
-                        "end": ts,
-                        "generation": None,
-                        "showInput": False,
-                        "language": None,
-                        "indent": 0,
-                    })
-        except Exception:
-            return None
-        name = "新对话"
-        for s in steps:
-            if s["type"] == "user_message" and s["output"]:
-                name = s["output"][:50]
-                break
-        created_at = session.thread_id_to_resume.replace("T", " ").replace("-", ":", 2).replace(":", "-", 2)
-        return {
-            "id": session.thread_id_to_resume,
-            "createdAt": created_at,
-            "name": name,
-            "userId": None,
-            "userIdentifier": None,
-            "tags": None,
-            "metadata": {},
-            "steps": steps,
-            "elements": [],
-        }
+    if not data_layer or not session.thread_id_to_resume:
+        return None
 
-    if not session.user or not session.thread_id_to_resume:
-        return
+    # Local mode (no auth): skip user ownership check
+    if not session.user:
+        thread = await data_layer.get_thread(thread_id=session.thread_id_to_resume)
+        return thread if thread else None
+
     thread = await data_layer.get_thread(thread_id=session.thread_id_to_resume)
     if not thread:
-        return
+        return None
 
     author = thread.get("userIdentifier")
     user_is_author = author == session.user.identifier
@@ -161,6 +106,7 @@ async def resume_thread(session: WebsocketSession):
             session.chat_settings = chat_settings
 
         return thread
+    return None
 
 
 def load_user_env(user_env):
@@ -225,6 +171,15 @@ async def connect(sid: str, environ: WSGIEnvironment, auth: WebSocketSessionAuth
                 if thread and not (thread["userIdentifier"] == user.identifier):
                     logger.error("Authorization for the thread failed.")
                     raise ConnectionRefusedError("authorization failed")
+    else:
+        # Local single-user mode: inject anonymous user when DataLayer is active
+        if data_layer := get_data_layer():
+            anon = await data_layer.get_user("local-user")
+            if not anon:
+                anon = await data_layer.create_user(
+                    User(identifier="local-user", metadata={"provider": "local"})
+                )
+            user = anon
 
     # Session scoped function to emit to the client
     def emit_fn(event, data):

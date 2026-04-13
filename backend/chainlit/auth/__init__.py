@@ -85,6 +85,16 @@ async def authenticate_user(token: str = Depends(reuseable_oauth)):
 
 async def get_current_user(token: str = Depends(reuseable_oauth)):
     if not require_login():
+        # Local single-user mode: inject anonymous user when DataLayer is active
+        if data_layer := get_data_layer():
+            from chainlit.user import PersistedUser, User
+
+            anon = await data_layer.get_user("local-user")
+            if not anon:
+                anon = await data_layer.create_user(
+                    User(identifier="local-user", metadata={"provider": "local"})
+                )
+            return anon
         return None
 
     return await authenticate_user(token)

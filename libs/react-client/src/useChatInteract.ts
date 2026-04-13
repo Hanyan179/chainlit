@@ -50,9 +50,8 @@ const useChatInteract = () => {
 
   const clear = useCallback(() => {
     session?.socket.emit('clear_session');
-    session?.socket.disconnect();
     setIdToResume(undefined);
-    resetSessionId();
+    setCurrentThreadId(undefined);
     setFirstUserInteraction(undefined);
     setMessages([]);
     setElements([]);
@@ -62,7 +61,10 @@ const useChatInteract = () => {
     resetChatSettings();
     resetChatSettingsValue();
     setSideView(undefined);
-    setCurrentThreadId(undefined);
+    setFavoriteMessages([]);
+    // disconnect last — after state is cleared
+    session?.socket.disconnect();
+    resetSessionId();
   }, [session]);
 
   const sendMessage = useCallback(
